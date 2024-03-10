@@ -57,15 +57,14 @@ class Board:
         return False
 
     def handle_kitten_upgrades(self, color):
-        if (color == 'red' and self.red_kittens == 0) or (color == 'blue' and self.blue_kittens == 0):
-            three_kitten_rows = self.get_three_kitten_rows(color)
-            if three_kitten_rows:
-                if len(three_kitten_rows) == 1:
-                    self.upgrade_three_kittens(color, three_kitten_rows[0])
-                else:
-                    self.ask_for_kitten_upgrade(color, three_kitten_rows)
+        three_kitten_rows = self.get_three_kitten_rows(color)
+        if three_kitten_rows:
+            if len(three_kitten_rows) == 1:
+                self.upgrade_three_kittens(color, three_kitten_rows[0])
             else:
-                self.upgrade_single_kitten(color)
+                self.ask_for_kitten_upgrade(color, three_kitten_rows)
+        elif self.has_eight_on_board(color):
+            self.upgrade_single_kitten(color)
 
     def get_three_kitten_rows(self, color):
         kitten = color[0]
@@ -123,6 +122,10 @@ class Board:
                         self.blue_kittens -= 1
                         self.blue_cats += 1
                     return
+                    
+    def has_eight_on_board(self, color):
+        count = sum(1 for row in self.grid for piece in row if piece and piece.lower() == color[0])
+        return count == 8  
 
     def print_board(self):
         for row in self.grid:
