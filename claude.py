@@ -13,7 +13,7 @@ class Board:
         if not self.is_empty(row, col):
             return False
 
-        self.grid[row][col] = f"{color}_kitten"
+        self.grid[row][col] = f"{color[0]}"
         self.supplies[color] -= 1
         self.push_adjacent(row, col)
 
@@ -46,7 +46,7 @@ class Board:
             self.grid[new_row][new_col] = self.grid[row][col]
             self.grid[row][col] = None
         else:
-            color, piece = self.grid[row][col].split('_')
+            color, piece = self.grid[row][col].lower(), 'kitten'
             self.grid[row][col] = None
             self.supplies[color] += 1
 
@@ -54,64 +54,69 @@ class Board:
         return 0 <= row < 6 and 0 <= col < 6
 
     def has_three_in_row(self, color, piece_type):
+        piece = color[0].upper() if piece_type == 'cat' else color[0]
         for row in range(6):
             for col in range(4):
-                if all(self.grid[row][col+i] == f"{color}_{piece_type}" for i in range(3)):
+                if all(self.grid[row][col+i] == piece for i in range(3)):
                     return True
         for col in range(6):
             for row in range(4):
-                if all(self.grid[row+i][col] == f"{color}_{piece_type}" for i in range(3)):
+                if all(self.grid[row+i][col] == piece for i in range(3)):
                     return True
         for row in range(4):
             for col in range(4):
-                if all(self.grid[row+i][col+i] == f"{color}_{piece_type}" for i in range(3)):
+                if all(self.grid[row+i][col+i] == piece for i in range(3)):
                     return True
         for row in range(4):
             for col in range(2, 6):
-                if all(self.grid[row+i][col-i] == f"{color}_{piece_type}" for i in range(3)):
+                if all(self.grid[row+i][col-i] == piece for i in range(3)):
                     return True
         return False
 
     def has_eight_on_board(self, color):
-        count = sum(1 for row in self.grid for piece in row if piece and piece.startswith(color))
+        count = sum(1 for row in self.grid for piece in row if piece and piece.lower() == color[0])
         return count == 8
 
     def upgrade_three_kittens(self, color):
+        kitten = color[0]
+        cat = color[0].upper()
         for row in range(6):
             for col in range(4):
-                if all(self.grid[row][col+i] == f"{color}_kitten" for i in range(3)):
+                if all(self.grid[row][col+i] == kitten for i in range(3)):
                     for i in range(3):
-                        self.grid[row][col+i] = f"{color}_cat"
+                        self.grid[row][col+i] = cat
                     self.supplies[color] += 3
                     return
         for col in range(6):
             for row in range(4):
-                if all(self.grid[row+i][col] == f"{color}_kitten" for i in range(3)):
+                if all(self.grid[row+i][col] == kitten for i in range(3)):
                     for i in range(3):
-                        self.grid[row+i][col] = f"{color}_cat"
+                        self.grid[row+i][col] = cat
                     self.supplies[color] += 3
                     return
         for row in range(4):
             for col in range(4):
-                if all(self.grid[row+i][col+i] == f"{color}_kitten" for i in range(3)):
+                if all(self.grid[row+i][col+i] == kitten for i in range(3)):
                     for i in range(3):
-                        self.grid[row+i][col+i] = f"{color}_cat"
+                        self.grid[row+i][col+i] = cat
                     self.supplies[color] += 3
                     return
         for row in range(4):
             for col in range(2, 6):
-                if all(self.grid[row+i][col-i] == f"{color}_kitten" for i in range(3)):
+                if all(self.grid[row+i][col-i] == kitten for i in range(3)):
                     for i in range(3):
-                        self.grid[row+i][col-i] = f"{color}_cat"
+                        self.grid[row+i][col-i] = cat
                     self.supplies[color] += 3
                     return
 
     def upgrade_single_kitten(self, color):
+        kitten = color[0]
+        cat = color[0].upper()
         if self.supplies[color] > 0:
             for row in range(6):
                 for col in range(6):
-                    if self.grid[row][col] == f"{color}_kitten":
-                        self.grid[row][col] = f"{color}_cat"
+                    if self.grid[row][col] == kitten:
+                        self.grid[row][col] = cat
                         self.supplies[color] -= 1
                         return
 
