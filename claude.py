@@ -71,11 +71,9 @@ class Board:
 
     def push_piece(self, row, col, dr, dc):
         new_row, new_col = row + dr, col + dc
-        if self.is_on_board(new_row, new_col) and self.is_empty(new_row, new_col):
-            self.grid[new_row][new_col] = self.grid[row][col]
-            self.grid[row][col] = None
-        else:
-            piece = self.grid[row][col]
+        piece = self.grid[row][col]
+        if not self.is_on_board(new_row, new_col):
+            # Case 1: Next space is off the board
             self.grid[row][col] = None
             if piece == 'r':
                 self.red_kittens += 1
@@ -85,6 +83,13 @@ class Board:
                 self.blue_kittens += 1
             else:
                 self.blue_cats += 1
+        elif self.is_empty(new_row, new_col):
+            # Case 2: Next space is empty
+            self.grid[new_row][new_col] = piece
+            self.grid[row][col] = None
+        else:
+            # Case 3: Next space is not empty, do not push
+            pass
 
     def is_on_board(self, row, col):
         return 0 <= row < 6 and 0 <= col < 6
