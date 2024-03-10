@@ -47,13 +47,11 @@ class Board:
 
         self.push_adjacent(row, col)
 
-        if self.has_three_in_row(color, 'cat'):
+        if self.has_three_in_row(color, 'cat') or self.has_eight_on_board(color, 'cat'):
             return True
 
         if piece_type == 'k':
             if (color == 'red' and self.red_kittens == 0) or (color == 'blue' and self.blue_kittens == 0):
-                if self.has_eight_on_board(color):
-                    return True
                 self.upgrade_three_kittens(color)
                 self.upgrade_single_kitten(color)
 
@@ -114,8 +112,9 @@ class Board:
                     return True
         return False
 
-    def has_eight_on_board(self, color):
-        count = sum(1 for row in self.grid for piece in row if piece and piece.lower() == color[0])
+    def has_eight_on_board(self, color, piece_type):
+        piece = color[0].upper() if piece_type == 'cat' else color[0]
+        count = sum(1 for row in self.grid for piece_on_board in row if piece_on_board == piece)
         return count == 8
 
     def upgrade_three_kittens(self, color):
