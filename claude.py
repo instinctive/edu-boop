@@ -71,9 +71,7 @@ class Board:
 
     def push_piece(self, row, col, dr, dc):
         new_row, new_col = row + dr, col + dc
-        while self.is_on_board(new_row, new_col) and self.is_empty(new_row, new_col):
-            new_row, new_col = new_row + dr, new_col + dc
-        if self.is_on_board(new_row, new_col):
+        if self.is_on_board(new_row, new_col) and self.is_empty(new_row, new_col):
             self.grid[new_row][new_col] = self.grid[row][col]
             self.grid[row][col] = None
         else:
