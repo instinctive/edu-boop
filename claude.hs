@@ -1,37 +1,36 @@
 import Data.List (intercalate, nub)
 import Data.Array (Array, array, bounds, elems, indices, (!), (//))
-import Data.Char (toLower)
+import Data.Maybe (isJust, fromJust)
 
+data Color = Red | Blue deriving (Eq, Show)
+data PieceType = Kitten | Cat deriving (Eq, Show)
+type Piece = Maybe (Color, PieceType)
 type Board = Array (Int, Int) Piece
-data Piece = Empty | RedKitten | RedCat | BlueKitten | BlueCat deriving (Eq, Show)
-type Player = (Piece, Int, Int) -- (color, kittens, cats)
+type Player = (Color, Int, Int) -- (color, kittens, cats)
 
 initialBoard :: Board
-initialBoard = array ((0, 0), (5, 5)) [((x, y), Empty) | x <- [0..5], y <- [0..5]]
+initialBoard = array ((0, 0), (5, 5)) [((x, y), Nothing) | x <- [0..5], y <- [0..5]]
 
 initialPlayers :: (Player, Player)
-initialPlayers = ((RedKitten, 8, 0), (BlueKitten, 8, 0))
+initialPlayers = ((Red, 8, 0), (Blue, 8, 0))
 
 showPiece :: Piece -> Char
-showPiece Empty = '.'
-showPiece RedKitten = 'r'
-showPiece RedCat = 'R'
-showPitten BlueKitten = 'b'
-showPitten BlueCat = 'B'
+showPiece Nothing = '.'
+showPiece (Just (Red, Kitten)) = 'r'
+showPiece (Just (Red, Cat)) = 'R'
+showPiece (Just (Blue, Kitten)) = 'b'
+showPiece (Just (Blue, Cat)) = 'B'
 
 displayBoard :: Board -> String
 displayBoard board = unlines [intercalate " " [showPiece (board ! (x, y)) | y <- [0..5]] | x <- [0..5]]
 
 getPossibleMoves :: Player -> [((Int, Int), Piece)]
 getPossibleMoves (color, kittens, cats)
-    | kittens > 0 = [((x, y), color) | x <- [0..5], y <- [0..5], board ! (x, y) == Empty]
-    | cats > 0 = [((x, y), NextPiece color) | x <- [0..5], y <- [0..5], board ! (x, y) == Empty]
+    | kittens > 0 = [((x, y), Just (color, Kitten)) | x <- [0..5], y <- [0..5], board ! (x, y) == Nothing]
+    | cats > 0 = [((x, y), Just (color, Cat)) | x <- [0..5], y <- [0..5], board ! (x, y) == Nothing]
     | otherwise = []
     where
         board = initialBoard
-        NextPiece RedKitten = RedCat
-        NextPiece BlueKitten = BlueCat
-        NextPiece _ = error "Invalid player color"
 
 parseMove :: String -> Maybe ((Int, Int), Piece)
 parseMove (p:row:col:_)
@@ -39,17 +38,14 @@ parseMove (p:row:col:_)
     | otherwise = Nothing
     where
         piece = case toLower p of
-            'k' -> playerColor
-            'c' -> case playerColor of
-                     RedKitten -> RedCat
-                     BlueKitten -> BlueCat
-                     _ -> error "Invalid player color"
+            'k' -> Just (playerColor, Kitten)
+            'c' -> Just (playerColor, Cat)
             _ -> error "Invalid move"
         isValidMove (row, col) p =
             row >= '1' && row <= '6' &&
             col >= '1' && col <= '6' &&
             (p == 'k' || p == 'c')
-        playerColor = color $ fst initialPlayers
+        playerColor = fst initialPlayers
 
 makeMove :: Board -> Player -> ((Int, Int), Piece) -> (Board, Player)
 makeMove board player@(color, kittens, cats) ((row, col), piece) =
@@ -63,20 +59,17 @@ makeMove board player@(color, kittens, cats) ((row, col), piece) =
             let (x', y') = (x + dx, y + dy)
                 (loX, loY, hiX, hiY) = bounds b
             in x' >= loX && x' <= hiX && y' >= loY && y' <= hiY &&
-               (b ! (x', y') == Empty || not (inBounds b (x' + dx, y' + dy)))
+               (b ! (x', y') == Nothing || not (inBounds b (x' + dx, y' + dy)))
         pushPiece b (x, y) =
-            if b ! (x, y) /= piece
+            if isJust (b ! (x, y)) && b ! (x, y) /= piece
                 then b // [((x, y), b ! (x - dx, y - dy))]
                 else b
             where
                 (dx, dy) = getDirToNewPiece b (x, y) (row, col)
         getDirToNewPiece b (x, y) (r, c) =
             head [(dx, dy) | (dx, dy) <- dirs, x + dx == r, y + dy == c]
-        newKittens = if piece == color then kittens - 1 else kittens
-        newCats = if piece == NextPiece color then cats + 1 else cats
-        NextPiece RedKitten = RedCat
-        NextPiece BlueKitten = BlueCat
-        NextPiece _ = error "Invalid player color"
+        newKittens = if isJust piece && fromJust piece == (color, Kitten) then kittens - 1 else kittens
+        newCats = if isJust piece && fromJust piece == (color, Cat) then cats + 1 else cats
 
 checkWin :: Board -> Player -> Bool
 checkWin board (color, _, _) =
@@ -84,15 +77,17 @@ checkWin board (color, _, _) =
     where
         hasThreeInARow b c =
             any (\[(x, y), (x', y'), (x'', y'')] ->
-                     b ! (x, y) == b ! (x', y') && b ! (x', y') == b ! (x'', y'') && b ! (x, y) == c)
+                     isJust (b ! (x, y)) && isJust (b ! (x', y')) && isJust (b ! (x'', y'')) &&
+                     fromJust (b ! (x, y)) == (c, p) && fromJust (b ! (x', y')) == (c, p) && fromJust (b ! (x'', y'')) == (c, p))
                 triplets
-        hasTotalEight b c = length (filter (== c) (elems b)) == 8
+        hasTotalEight b c = length (filter (\p -> isJust p && fromJust p == (c, Cat)) (elems b)) == 8
         triplets = [([(x, y), (x + dx, y + dy), (x + 2 * dx, y + 2 * dy)] |
                      x <- [0..3], y <- [0..5], (dx, dy) <- [(0, 1), (1, 0), (1, 1), (1, -1)],
                      inBounds b (x, y) && inBounds b (x + dx, y + dy) && inBounds b (x + 2 * dx, y + 2 * dy))]
         inBounds b (x, y) =
             let (loX, loY, hiX, hiY) = bounds b
             in x >= loX && x <= hiX && y >= loY && y <= hiY
+        p = Cat -- or Kitten, doesn't matter for the win condition
 
 checkUpgrade :: Board -> Player -> (Board, Player)
 checkUpgrade board player@(color, kittens, cats) =
@@ -106,13 +101,14 @@ checkUpgrade board player@(color, kittens, cats) =
             [(x, y, x + dx, y + dy, x + 2 * dx, y + 2 * dy) |
              x <- [0..3], y <- [0..5], (dx, dy) <- [(0, 1), (1, 0), (1, 1), (1, -1)],
              inBounds board (x, y) && inBounds board (x + dx, y + dy) && inBounds board (x + 2 * dx, y + 2 * dy) &&
-             board ! (x, y) == color && board ! (x + dx, y + dy) == color && board ! (x + 2 * dx, y + 2 * dy) == color]
-        newBoard = foldl' (\b (x, y) -> b // [((x, y), Empty)]) board coords
+             isJust (board ! (x, y)) && isJust (board ! (x + dx, y + dy)) && isJust (board ! (x + 2 * dx, y + 2 * dy)) &&
+             fromJust (board ! (x, y)) == (color, Kitten) && fromJust (board ! (x + dx, y + dy)) == (color, Kitten) && fromJust (board ! (x + 2 * dx, y + 2 * dy)) == (color, Kitten)]
+        newBoard = foldl' (\b (x, y) -> b // [((x, y), Nothing)]) board coords
         coords = (x, y, x', y', x'', y'')
         (x, y) = head threeInARows
         (x', y') = threeInARows !! 1
         (x'', y'') = threeInARows !! 2
-        hasTotalEight b c = length (filter (== c) (elems b)) == 8
+        hasTotalEight b c = length (filter (\p -> isJust p && fromJust p == (c, Cat)) (elems b)) == 8
         inBounds b (x, y) =
             let (loX, loY, hiX, hiY) = bounds b
             in x >= loX && x <= hiX && y >= loY && y <= hiY
