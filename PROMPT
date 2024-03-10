@@ -1,0 +1,13 @@
+Please write me a python program to manage a game of Boop between two players. Here are the rules of Boop:
+
+Boop is a two-player game played on a 6 by 6 grid of squares that is initially empty of pieces. Each player has a color, either red or blue, and begins the game with 8 Kitten pieces of their color off the board in their supply.
+
+Players alternate turns. On their turn, a player places one of their off-board pieces onto any empty square on the board. Then each previously placed piece of either player that is orthogonally or diagonally adjacent to the newly placed piece is pushed one square directly away from the newly placed piece if and only if this would either move it off the board or into an empty square. If the pushed piece is moved off the board, it returns to the player’s supply of pieces.
+
+After placing a piece and pushing adjacent pieces, check for victory. If a player has three Cat pieces in a row, that player wins. If a player has 8 Cat pieces on the board, that player wins.
+
+Then check to see if a player has three Kitten pieces in a row. If they do, they may remove one such row of three Kitten pieces from the board and replace them, in their supply, with three Cat pieces.
+
+Alternatively, if a player has 8 pieces on the board, they may remove any one of them and replace it with a Cat in their supply.
+
+Then it is the other player’s turn. Continue playing until someone wins.
