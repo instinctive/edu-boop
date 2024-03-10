@@ -151,6 +151,60 @@ class Board:
         print(f"Blue kittens: {self.blue_kittens}, Blue cats: {self.blue_cats}")
         print(f"Current player's turn: {self.player_turn}")
 
+    def push_adjacent(self, row, col):
+        for dr in [-1, 0, 1]:
+            for dc in [-1, 0, 1]:
+                if dr == dc == 0:
+                    continue
+                new_row, new_col = row + dr, col + dc
+                if self.is_on_board(new_row, new_col) and self.grid[new_row][new_col] is not None:
+                    self.push_piece(new_row, new_col, dr, dc)
+
+    def push_piece(self, row, col, dr, dc):
+        new_row, new_col = row + dr, col + dc
+        piece = self.grid[row][col]
+        if not self.is_on_board(new_row, new_col):
+            # Case 1: Next space is off the board
+            self.grid[row][col] = None
+            if piece == 'r':
+                self.red_kittens += 1
+            elif piece == 'R':
+                self.red_cats += 1
+            elif piece == 'b':
+                self.blue_kittens += 1
+            else:
+                self.blue_cats += 1
+        elif self.is_empty(new_row, new_col):
+            # Case 2: Next space is empty
+            self.grid[new_row][new_col] = piece
+            self.grid[row][col] = None
+        else:
+            # Case 3: Next space is not empty, do not push
+            pass
+
+    def is_on_board(self, row, col):
+        return 0 <= row < 6 and 0 <= col < 6
+
+    def has_three_in_row(self, color, piece_type):
+        piece = color[0].upper() if piece_type == 'cat' else color[0]
+        for row in range(6):
+            for col in range(4):
+                if all(self.grid[row][col+i] == piece for i in range(3)):
+                    return True
+        for col in range(6):
+            for row in range(4):
+                if all(self.grid[row+i][col] == piece for i in range(3)):
+                    return True
+        for row in range(4):
+            for col in range(4):
+                if all(self.grid[row+i][col+i] == piece for i in range(3)):
+                    return True
+        for row in range(4):
+            for col in range(2, 6):
+                if all(self.grid[row+i][col-i] == piece for i in range(3)):
+                    return True
+        return False
+
 def play_game():
     board = Board()
     while True:
@@ -163,4 +217,4 @@ def play_game():
             break
 
 if __name__ == "__main__":
-    play_game() 
+    play_game()
