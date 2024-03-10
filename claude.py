@@ -51,143 +51,78 @@ class Board:
             return True
 
         if piece_type == 'k':
-            if (color == 'red' and self.red_kittens == 0) or (color == 'blue' and self.blue_kittens == 0):
-                self.upgrade_three_kittens(color)
-                self.upgrade_single_kitten(color)
+            self.handle_kitten_upgrades(color)
 
         self.player_turn = 'blue' if color == 'red' else 'red'
         return False
 
-    def push_adjacent(self, row, col):
-        for dr in [-1, 0, 1]:
-            for dc in [-1, 0, 1]:
-                if dr == dc == 0:
-                    continue
-                new_row, new_col = row + dr, col + dc
-                if self.is_on_board(new_row, new_col) and self.grid[new_row][new_col] is not None:
-                    self.push_piece(new_row, new_col, dr, dc)
-
-    def push_piece(self, row, col, dr, dc):
-        new_row, new_col = row + dr, col + dc
-        piece = self.grid[row][col]
-        if not self.is_on_board(new_row, new_col):
-            # Case 1: Next space is off the board
-            self.grid[row][col] = None
-            if piece == 'r':
-                self.red_kittens += 1
-            elif piece == 'R':
-                self.red_cats += 1
-            elif piece == 'b':
-                self.blue_kittens += 1
+    def handle_kitten_upgrades(self, color):
+        if (color == 'red' and self.red_kittens == 0) or (color == 'blue' and self.blue_kittens == 0):
+            three_kitten_rows = self.get_three_kitten_rows(color)
+            if three_kitten_rows:
+                if len(three_kitten_rows) == 1:
+                    self.upgrade_three_kittens(color, three_kitten_rows[0])
+                else:
+                    self.ask_for_kitten_upgrade(color, three_kitten_rows)
             else:
-                self.blue_cats += 1
-        elif self.is_empty(new_row, new_col):
-            # Case 2: Next space is empty
-            self.grid[new_row][new_col] = piece
-            self.grid[row][col] = None
-        else:
-            # Case 3: Next space is not empty, do not push
-            pass
+                self.upgrade_single_kitten(color)
 
-    def is_on_board(self, row, col):
-        return 0 <= row < 6 and 0 <= col < 6
-
-    def has_three_in_row(self, color, piece_type):
-        piece = color[0].upper() if piece_type == 'cat' else color[0]
-        for row in range(6):
-            for col in range(4):
-                if all(self.grid[row][col+i] == piece for i in range(3)):
-                    return True
-        for col in range(6):
-            for row in range(4):
-                if all(self.grid[row+i][col] == piece for i in range(3)):
-                    return True
-        for row in range(4):
-            for col in range(4):
-                if all(self.grid[row+i][col+i] == piece for i in range(3)):
-                    return True
-        for row in range(4):
-            for col in range(2, 6):
-                if all(self.grid[row+i][col-i] == piece for i in range(3)):
-                    return True
-        return False
-
-    def has_eight_on_board(self, color, piece_type):
-        piece = color[0].upper() if piece_type == 'cat' else color[0]
-        count = sum(1 for row in self.grid for piece_on_board in row if piece_on_board == piece)
-        return count == 8
-
-    def upgrade_three_kittens(self, color):
+    def get_three_kitten_rows(self, color):
         kitten = color[0]
-        cat = color[0].upper()
+        three_kitten_rows = []
         for row in range(6):
             for col in range(4):
                 if all(self.grid[row][col+i] == kitten for i in range(3)):
-                    for i in range(3):
-                        self.grid[row][col+i] = cat
-                    if color == 'red':
-                        self.red_kittens -= 3
-                        self.red_cats += 3
-                    else:
-                        self.blue_kittens -= 3
-                        self.blue_cats += 3
-                    return
+                    three_kitten_rows.append((row, col))
         for col in range(6):
             for row in range(4):
                 if all(self.grid[row+i][col] == kitten for i in range(3)):
-                    for i in range(3):
-                        self.grid[row+i][col] = cat
-                    if color == 'red':
-                        self.red_kittens -= 3
-                        self.red_cats += 3
-                    else:
-                        self.blue_kittens -= 3
-                        self.blue_cats += 3
-                    return
+                    three_kitten_rows.append((row, col))
         for row in range(4):
             for col in range(4):
                 if all(self.grid[row+i][col+i] == kitten for i in range(3)):
-                    for i in range(3):
-                        self.grid[row+i][col+i] = cat
-                    if color == 'red':
-                        self.red_kittens -= 3
-                        self.red_cats += 3
-                    else:
-                        self.blue_kittens -= 3
-                        self.blue_cats += 3
-                    return
+                    three_kitten_rows.append((row, col))
         for row in range(4):
             for col in range(2, 6):
                 if all(self.grid[row+i][col-i] == kitten for i in range(3)):
-                    for i in range(3):
-                        self.grid[row+i][col-i] = cat
-                    if color == 'red':
-                        self.red_kittens -= 3
-                        self.red_cats += 3
-                    else:
-                        self.blue_kittens -= 3
-                        self.blue_cats += 3
-                    return
+                    three_kitten_rows.append((row, col))
+        return three_kitten_rows
+
+    def ask_for_kitten_upgrade(self, color, three_kitten_rows):
+        print(f"{color.capitalize()} player, you have multiple groups of three kittens in a row.")
+        for i, (row, col) in enumerate(three_kitten_rows, start=1):
+            print(f"Option {i}: Row {row}, Column {col}")
+        choice = int(input("Enter the option number to upgrade to cats: "))
+        row, col = three_kitten_rows[choice - 1]
+        self.upgrade_three_kittens(color, (row, col))
+
+    def upgrade_three_kittens(self, color, row_col):
+        row, col = row_col
+        kitten = color[0]
+        cat = color[0].upper()
+        for i in range(3):
+            self.grid[row][col+i] = cat
+        if color == 'red':
+            self.red_kittens -= 3
+            self.red_cats += 3
+        else:
+            self.blue_kittens -= 3
+            self.blue_cats += 3
 
     def upgrade_single_kitten(self, color):
         kitten = color[0]
         cat = color[0].upper()
-        if color == 'red' and self.red_cats > 0:
-            for row in range(6):
-                for col in range(6):
-                    if self.grid[row][col] == kitten:
-                        self.grid[row][col] = cat
+        for row in range(6):
+            for col in range(6):
+                if self.grid[row][col] == kitten:
+                    self.grid[row][col] = cat
+                    if color == 'red':
                         self.red_kittens -= 1
-                        self.red_cats -= 1
-                        return
-        elif color == 'blue' and self.blue_cats > 0:
-            for row in range(6):
-                for col in range(6):
-                    if self.grid[row][col] == kitten:
-                        self.grid[row][col] = cat
+                        self.red_cats += 1
+                    else:
                         self.blue_kittens -= 1
-                        self.blue_cats -= 1
-                        return
+                        self.blue_cats += 1
+                    return
 
     def print_board(self):
         for row in self.grid:
