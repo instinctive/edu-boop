@@ -47,11 +47,10 @@ class Board:
 
         self.push_adjacent(row, col)
 
-        if self.has_three_in_row(color, 'cat') or self.has_eight_on_board(color, 'cat'):
+        if self.has_three_in_row(color, 'cat') or self.has_eight_cats(color):
             return True
 
-        if piece_type == 'k':
-            self.handle_kitten_upgrades(color)
+        self.handle_kitten_upgrades(color)
 
         self.player_turn = 'blue' if color == 'red' else 'red'
         return False
@@ -64,7 +63,7 @@ class Board:
             else:
                 self.ask_for_kitten_upgrade(color, three_kitten_rows)
         elif self.has_eight_on_board(color):
-            self.upgrade_single_kitten(color)
+            self.ask_for_piece_upgrade(color)
 
     def get_three_kitten_rows(self, color):
         kitten = color[0]
@@ -95,6 +94,18 @@ class Board:
         row, col = three_kitten_rows[choice - 1]
         self.upgrade_three_kittens(color, (row, col))
 
+    def ask_for_piece_upgrade(self, color):
+        print(f"{color.capitalize()} player, you have eight pieces on the board.")
+        print("Select a piece to remove and replace with a cat:")
+        for row in range(6):
+            for col in range(6):
+                piece = self.grid[row][col]
+                if piece and piece.lower() == color[0]:
+                    print(f"Option {row * 6 + col + 1}: Row {row}, Column {col}")
+        choice = int(input("Enter the option number: "))
+        row, col = (choice - 1) // 6, (choice - 1) % 6
+        self.upgrade_piece(color, row, col)
+
     def upgrade_three_kittens(self, color, row_col):
         row, col = row_col
         kitten = color[0]
@@ -108,24 +119,30 @@ class Board:
             self.blue_kittens -= 3
             self.blue_cats += 3
 
-    def upgrade_single_kitten(self, color):
-        kitten = color[0]
+    def upgrade_piece(self, color, row, col):
+        piece = self.grid[row][col]
         cat = color[0].upper()
-        for row in range(6):
-            for col in range(6):
-                if self.grid[row][col] == kitten:
-                    self.grid[row][col] = cat
-                    if color == 'red':
-                        self.red_kittens -= 1
-                        self.red_cats += 1
-                    else:
-                        self.blue_kittens -= 1
-                        self.blue_cats += 1
-                    return
-                    
+        self.grid[row][col] = cat
+        if piece == color[0]:
+            if color == 'red':
+                self.red_kittens -= 1
+                self.red_cats += 1
+            else:
+                self.blue_kittens -= 1
+                self.blue_cats += 1
+        else:
+            if color == 'red':
+                self.red_cats += 1
+            else:
+                self.blue_cats += 1
+
+    def has_eight_cats(self, color):
+        count = sum(1 for row in self.grid for piece in row if piece == color[0].upper())
+        return count == 8
+
     def has_eight_on_board(self, color):
         count = sum(1 for row in self.grid for piece in row if piece and piece.lower() == color[0])
-        return count == 8  
+        return count == 8
 
     def print_board(self):
         for row in self.grid:
@@ -146,4 +163,4 @@ def play_game():
             break
 
 if __name__ == "__main__":
-    play_game()
+    play_game() 
